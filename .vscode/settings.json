@@ -1,0 +1,13 @@
+{
+    "cSpell.ignoreRegExpList": ["[０-９Ａ-Ｚａ-ｚぁ-んァ-ヶ亜-熙纊-黑]+"],
+
+    "cSpell.words": [
+        "classlib",
+        "Xunit",
+    ],
+
+    "cSpell.ignorePaths": [
+        "*.json"
+    ],
+    "omnisharp.enableRoslynAnalyzers": true
+}

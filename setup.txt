@@ -1,0 +1,13 @@
+# 新規作成
+dotnet new sln --name ThreadingLibrary
+dotnet new classlib --name ThreadingLibrary
+dotnet new xunit --name ThreadingLibraryTest
+
+# 内部参照設定
+dotnet sln add ThreadingLibrary
+dotnet sln add ThreadingLibraryTest
+dotnet add ThreadingLibraryTest reference ThreadingLibrary
+
+# 外部参照設定
+dotnet add ThreadingLibrary package StyleCop.Analyzers
+dotnet add ThreadingLibraryTest package StyleCop.Analyzers
