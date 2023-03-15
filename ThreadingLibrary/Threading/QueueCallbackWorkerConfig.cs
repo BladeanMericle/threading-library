@@ -16,6 +16,13 @@ public class QueueCallbackWorkerConfig : IQueueCallbackWorkerConfig
     public static readonly bool DefaultIsStopImmediately = true;
 
     /// <summary>
+    /// 新しいインスタンスを初期化します。
+    /// </summary>
+    public QueueCallbackWorkerConfig()
+    {
+    }
+
+    /// <summary>
     /// 最大再帰カウントを取得または設定します。
     /// </summary>
     /// <value>最大再帰カウント。</value>
