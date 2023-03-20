@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 
 /// <summary>
-/// コールバックをキューに入れ、順番に処理し続ける機能を表します。
+/// コールバックを順番に処理し続ける機能を表します。
 /// </summary>
 public class QueueCallbackWorker : IQueueCallbackWorker
 {
@@ -21,7 +21,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// <summary>
     /// 処理の完了を待機するためのオブジェクト。
     /// </summary>
-    private readonly ManualResetEventSlim _completedWaitHandle = new (false);
+    private readonly ManualResetEventSlim _completedWaitHandle = new (true);
 
     /// <summary>
     /// 最大再帰カウント。
@@ -241,12 +241,13 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// リソースを非同期に解放します。
     /// </summary>
     /// <returns>非同期の解放操作を表すタスク。</returns>
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        await DisposeAsyncCore().ConfigureAwait(false);
-
-        DisposeCore(false);
-        GC.SuppressFinalize(this);
+        return new ValueTask(DisposeAsyncCore().ContinueWith(_ =>
+        {
+            DisposeCore(true);
+            GC.SuppressFinalize(this);
+        }));
     }
 
     /// <summary>
@@ -264,10 +265,9 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// リソースを非同期に解放する主要の処理です。
     /// </summary>
     /// <returns>非同期の解放操作を表すタスク。</returns>
-    protected virtual async ValueTask DisposeAsyncCore()
+    protected virtual Task DisposeAsyncCore()
     {
-        await Task.Yield();
-        DisposeCore(true);
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -338,6 +338,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
                         }
                     },
                     state));
+                invokeWaitHandle.Wait();
             }
             catch (InvalidOperationException ex)
             {
@@ -359,6 +360,8 @@ public class QueueCallbackWorker : IQueueCallbackWorker
 
         foreach (QueueCallbackWorkerItem remainingItem in _callbackQueue)
         {
+            Debug.Assert(remainingItem != null, "remainingItem != null");
+
             remainingItem.Callback(remainingItem.State);
         }
     }
