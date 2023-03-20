@@ -74,6 +74,11 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     public event EventHandler Started = (sender, e) => { };
 
     /// <summary>
+    /// 処理の終了を通知します。
+    /// </summary>
+    public event EventHandler Ended = (sender, e) => { };
+
+    /// <summary>
     /// 処理が実行中かどうかを取得します。
     /// </summary>
     /// <value>処理が実行中の場合は <see langword="true"/>、それ以外の場合は <see langword="false"/>。</value>
@@ -94,6 +99,18 @@ public class QueueCallbackWorker : IQueueCallbackWorker
         get
         {
             return (int)Interlocked.Read(ref _managedThreadId);
+        }
+    }
+
+    /// <summary>
+    /// キャンセルトークンを取得します。
+    /// </summary>
+    /// <value>キャンセルトークン。</value>
+    protected CancellationToken Token
+    {
+        get
+        {
+            return _cancellationTokenSource.Token;
         }
     }
 
@@ -201,6 +218,9 @@ public class QueueCallbackWorker : IQueueCallbackWorker
 
             // 残りの処理を実行します。
             InvokeRemainCallback();
+
+            // 処理の終了を通知します。
+            Ended(this, EventArgs.Empty);
         }
         finally
         {
@@ -300,28 +320,29 @@ public class QueueCallbackWorker : IQueueCallbackWorker
         Debug.Assert(callback != null, "callback != null");
         Debug.Assert(Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId, "Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId");
 
-        using WaitHandle tokenWaitHandle = _cancellationTokenSource.Token.WaitHandle;
-        using ManualResetEventSlim invokeWaitHandle = new (false);
-        try
+        using (ManualResetEventSlim invokeWaitHandle = new (false))
+        using (_cancellationTokenSource.Token.Register(invokeWaitHandle.Set))
         {
-            _callbackQueue.Add(new QueueCallbackWorkerItem(
-                s =>
-                {
-                    try
+            try
+            {
+                _callbackQueue.Add(new QueueCallbackWorkerItem(
+                    s =>
                     {
-                        callback(s);
-                    }
-                    finally
-                    {
-                        invokeWaitHandle.Set();
-                    }
-                },
-                state));
-            WaitHandle.WaitAny(new[] { tokenWaitHandle, invokeWaitHandle.WaitHandle });
-        }
-        catch (InvalidOperationException ex)
-        {
-            throw new ObjectDisposedException("Worker is already disposed.", ex);
+                        try
+                        {
+                            callback(s);
+                        }
+                        finally
+                        {
+                            invokeWaitHandle.Set();
+                        }
+                    },
+                    state));
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ObjectDisposedException("Worker is already disposed.", ex);
+            }
         }
     }
 
@@ -382,23 +403,36 @@ public class QueueCallbackWorker : IQueueCallbackWorker
             return;
         }
 
-        _callbackQueue.CompleteAdding();
-        _cancellationTokenSource.Cancel();
-
-        if (ManagedThreadId == Environment.CurrentManagedThreadId)
+        try
         {
-            // Dispose は例外を投げないという原則を無視してしまいますが、実行スレッドで Dispose が呼ばれた場合は例外を投げる可能性があります。
-            // 途中で例外がキャッチされていなければ、最終的に Run の例外として投げられるので自然な処理となるからです。
-            InvokeRemainCallback();
-        }
-        else
-        {
-            // Run の終了を待機します。
-            _completedWaitHandle.Wait();
-        }
+            _callbackQueue.CompleteAdding();
 
-        _cancellationTokenSource.Dispose();
-        _callbackQueue.Dispose();
-        _completedWaitHandle.Dispose();
+            try
+            {
+                _cancellationTokenSource.Cancel();
+            }
+            catch (AggregateException)
+            {
+                // こちらの例外については、Dispose からは例外を投げない原則に基づき無視します。
+            }
+
+            if (ManagedThreadId == Environment.CurrentManagedThreadId)
+            {
+                // Dispose は例外を投げないという原則に違反してしまいますが、実行スレッドで Dispose が呼ばれた場合は例外を投げる可能性があります。
+                // 途中で例外がキャッチされていなければ、最終的に Run の例外として投げられるので自然な処理となるからです。
+                InvokeRemainCallback();
+            }
+            else
+            {
+                // Run の終了を待機します。
+                _completedWaitHandle.Wait();
+            }
+        }
+        finally
+        {
+            _cancellationTokenSource.Dispose();
+            _callbackQueue.Dispose();
+            _completedWaitHandle.Dispose();
+        }
     }
 }

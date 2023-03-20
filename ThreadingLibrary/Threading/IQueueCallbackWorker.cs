@@ -11,6 +11,11 @@ public interface IQueueCallbackWorker : IDisposable, IAsyncDisposable
     event EventHandler Started;
 
     /// <summary>
+    /// 処理の終了を通知します。
+    /// </summary>
+    event EventHandler Ended;
+
+    /// <summary>
     /// 処理が実行中かどうかを取得します。
     /// </summary>
     /// <value>処理が実行中の場合は <see langword="true"/>、それ以外は <see langword="false"/>。</value>
