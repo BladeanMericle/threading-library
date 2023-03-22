@@ -4,14 +4,14 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 
 /// <summary>
-/// コールバックを順番に処理し続ける機能を表します。
+/// コールバックを順番に処理し続けるワーカーを表します。
 /// </summary>
 public class CallbackWorker : ICallbackWorker
 {
     /// <summary>
     /// コールバックのキュー。
     /// </summary>
-    private readonly BlockingCollection<CallbackWorkerItem> _callbackQueue = new ();
+    private readonly BlockingCollection<WorkItem> _callbackQueue = new ();
 
     /// <summary>
     /// キャンセルトークンを作成するオブジェクト。
@@ -124,7 +124,7 @@ public class CallbackWorker : ICallbackWorker
     /// <exception cref="InvalidOperationException">まだ処理が開始されていません。</exception>
     /// <exception cref="StackOverflowException">コールバックメソッドを実行しているスレッドで一定回数以上再帰的に呼び出されました。</exception>
     /// <exception cref="Exception">コールバックメソッドで例外が発生しました。</exception>
-    public virtual void Invoke(WorkCallback callback, object state)
+    public virtual void Invoke(WorkCallback callback, object? state)
     {
         ArgumentNullException.ThrowIfNull(callback);
         ThrowIfDisposed();
@@ -150,9 +150,9 @@ public class CallbackWorker : ICallbackWorker
     /// </summary>
     /// <param name="callback">コールバックメソッド。</param>
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
-    /// <exception cref="ArgumentNullException"><paramref name="callback"/> が <see langword="null"/> です。</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="callback"/>が<see langword="null"/>です。</exception>
     /// <exception cref="ObjectDisposedException">現在のインスタンスは既に破棄されています。</exception>
-    public virtual void InvokeAsync(WorkCallback callback, object state)
+    public virtual void InvokeAsync(WorkCallback callback, object? state)
     {
         ArgumentNullException.ThrowIfNull(callback);
         ThrowIfDisposed();
@@ -160,7 +160,7 @@ public class CallbackWorker : ICallbackWorker
         // タイミング悪くすり抜けてきても、ObjectDisposedException または処理が実行されずすり抜けるだけなはず。
         try
         {
-            _callbackQueue.Add(new CallbackWorkerItem(callback, state));
+            _callbackQueue.Add(new WorkItem(callback, state));
         }
         catch (InvalidOperationException ex)
         {
@@ -197,7 +197,7 @@ public class CallbackWorker : ICallbackWorker
             CancellationToken token = _cancellationTokenSource.Token;
             while (!token.IsCancellationRequested)
             {
-                CallbackWorkerItem callbackQueueItem;
+                WorkItem callbackQueueItem;
                 try
                 {
                     callbackQueueItem = _callbackQueue.Take(token);
@@ -254,8 +254,8 @@ public class CallbackWorker : ICallbackWorker
     /// リソースを解放します。
     /// </summary>
     /// <param name="disposing">
-    /// マネージドリソースとアンマネージドリソースを解放する場合は <see langword="true"/>、
-    /// アンマネージドリソースのみ解放する場合は <see langword="false"/>。
+    /// マネージドリソースとアンマネージドリソースを解放する場合は<see langword="true"/>、
+    /// アンマネージドリソースのみ解放する場合は<see langword="false"/>。
     /// </param>
     protected virtual void Dispose(bool disposing)
     {
@@ -288,7 +288,7 @@ public class CallbackWorker : ICallbackWorker
     /// <param name="callback">コールバックメソッド。</param>
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     /// <exception cref="StackOverflowException">コールバックメソッドを実行しているスレッドで一定回数以上再帰的に呼び出されました。</exception>
-    private void InvokeFromSameThread(WorkCallback callback, object state)
+    private void InvokeFromSameThread(WorkCallback callback, object? state)
     {
         Debug.Assert(callback != null, "callback != null");
         Debug.Assert(Interlocked.Read(ref _managedThreadId) == Environment.CurrentManagedThreadId, "Interlocked.Read(ref _managedThreadId) == Environment.CurrentManagedThreadId");
@@ -315,7 +315,7 @@ public class CallbackWorker : ICallbackWorker
     /// <param name="callback">コールバックメソッド。</param>
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     /// <exception cref="ObjectDisposedException">現在のインスタンスは既に破棄されています。</exception>
-    private void InvokeFromDifferentThread(WorkCallback callback, object state)
+    private void InvokeFromDifferentThread(WorkCallback callback, object? state)
     {
         Debug.Assert(callback != null, "callback != null");
         Debug.Assert(Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId, "Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId");
@@ -325,7 +325,7 @@ public class CallbackWorker : ICallbackWorker
         {
             try
             {
-                _callbackQueue.Add(new CallbackWorkerItem(
+                _callbackQueue.Add(new WorkItem(
                     s =>
                     {
                         try
@@ -358,7 +358,7 @@ public class CallbackWorker : ICallbackWorker
             return;
         }
 
-        foreach (CallbackWorkerItem remainingItem in _callbackQueue)
+        foreach (WorkItem remainingItem in _callbackQueue)
         {
             Debug.Assert(remainingItem != null, "remainingItem != null");
 
@@ -370,8 +370,8 @@ public class CallbackWorker : ICallbackWorker
     /// リソースを解放する主要な処理です。
     /// </summary>
     /// <param name="disposing">
-    /// マネージドリソースとアンマネージドリソースを解放する場合は <see langword="true"/>、
-    /// アンマネージドリソースのみ解放する場合は <see langword="false"/>。
+    /// マネージドリソースとアンマネージドリソースを解放する場合は<see langword="true"/>、
+    /// アンマネージドリソースのみ解放する場合は<see langword="false"/>。
     /// </param>
     private void DisposeCore(bool disposing)
     {

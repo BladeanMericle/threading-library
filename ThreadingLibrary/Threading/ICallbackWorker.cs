@@ -26,14 +26,14 @@ public interface ICallbackWorker : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="callback">コールバック。</param>
     /// <param name="state">コールバックに渡すオブジェクト。</param>
-    void Invoke(WorkCallback callback, object state);
+    void Invoke(WorkCallback callback, object? state);
 
     /// <summary>
     /// コールバックを非同期に実行します。
     /// </summary>
     /// <param name="callback">コールバック。</param>
     /// <param name="state">コールバックに渡すオブジェクト。</param>
-    void InvokeAsync(WorkCallback callback, object state);
+    void InvokeAsync(WorkCallback callback, object? state);
 
     /// <summary>
     /// 処理を開始し、コールバックを実行し続けます。このメソッドはインスタンスが破棄されるまで処理が継続します。
