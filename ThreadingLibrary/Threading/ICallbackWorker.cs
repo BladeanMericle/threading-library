@@ -3,7 +3,7 @@
 /// <summary>
 /// コールバックをキューに入れ、順番に処理し続ける機能を表すインタフェースです。
 /// </summary>
-public interface IQueueCallbackWorker : IDisposable, IAsyncDisposable
+public interface ICallbackWorker : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// 処理の開始を通知します。
@@ -26,14 +26,14 @@ public interface IQueueCallbackWorker : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="callback">コールバック。</param>
     /// <param name="state">コールバックに渡すオブジェクト。</param>
-    void Invoke(QueueCallback callback, object state);
+    void Invoke(WorkCallback callback, object state);
 
     /// <summary>
     /// コールバックを非同期に実行します。
     /// </summary>
     /// <param name="callback">コールバック。</param>
     /// <param name="state">コールバックに渡すオブジェクト。</param>
-    void InvokeAsync(QueueCallback callback, object state);
+    void InvokeAsync(WorkCallback callback, object state);
 
     /// <summary>
     /// 処理を開始し、コールバックを実行し続けます。このメソッドはインスタンスが破棄されるまで処理が継続します。

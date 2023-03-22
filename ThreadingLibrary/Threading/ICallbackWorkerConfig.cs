@@ -1,9 +1,9 @@
 ﻿namespace Mericle.Threading;
 
 /// <summary>
-/// <see cref="IQueueCallbackWorker"/> の設定を表すインタフェースです。
+/// <see cref="ICallbackWorker"/> の設定を表すインタフェースです。
 /// </summary>
-public interface IQueueCallbackWorkerConfig
+public interface ICallbackWorkerConfig
 {
     /// <summary>
     /// 最大再帰カウントを取得します。

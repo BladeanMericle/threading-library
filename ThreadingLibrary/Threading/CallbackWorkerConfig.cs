@@ -1,9 +1,9 @@
 ﻿namespace Mericle.Threading;
 
 /// <summary>
-/// <see cref="IQueueCallbackWorker"/> の設定を表します。
+/// <see cref="ICallbackWorker"/> の設定を表します。
 /// </summary>
-public class QueueCallbackWorkerConfig : IQueueCallbackWorkerConfig
+public class CallbackWorkerConfig : ICallbackWorkerConfig
 {
     /// <summary>
     /// 最大再帰カウントの初期値。
@@ -18,7 +18,7 @@ public class QueueCallbackWorkerConfig : IQueueCallbackWorkerConfig
     /// <summary>
     /// 新しいインスタンスを初期化します。
     /// </summary>
-    public QueueCallbackWorkerConfig()
+    public CallbackWorkerConfig()
     {
     }
 

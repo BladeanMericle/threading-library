@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Mericle.Threading
 {
-    public class QueueCallbackWorkerSynchronizationContext : SynchronizationContext
+    public class CallbackWorkerSynchronizationContext : SynchronizationContext
     {
 
     }

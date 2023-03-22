@@ -6,12 +6,12 @@ using System.Diagnostics;
 /// <summary>
 /// コールバックを順番に処理し続ける機能を表します。
 /// </summary>
-public class QueueCallbackWorker : IQueueCallbackWorker
+public class CallbackWorker : ICallbackWorker
 {
     /// <summary>
     /// コールバックのキュー。
     /// </summary>
-    private readonly BlockingCollection<QueueCallbackWorkerItem> _callbackQueue = new ();
+    private readonly BlockingCollection<CallbackWorkerItem> _callbackQueue = new ();
 
     /// <summary>
     /// キャンセルトークンを作成するオブジェクト。
@@ -51,8 +51,8 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// <summary>
     /// 標準の構成で新しいインスタンスを初期化します。
     /// </summary>
-    public QueueCallbackWorker()
-        : this(new QueueCallbackWorkerConfig())
+    public CallbackWorker()
+        : this(new CallbackWorkerConfig())
     {
     }
 
@@ -60,9 +60,9 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// 指定した構成で新しいインスタンスを初期化します。
     /// </summary>
     /// <param name="config">構成。</param>
-    public QueueCallbackWorker(IQueueCallbackWorkerConfig config)
+    public CallbackWorker(ICallbackWorkerConfig config)
     {
-        config ??= new QueueCallbackWorkerConfig();
+        config ??= new CallbackWorkerConfig();
 
         _maxRecursionCount = config.MaxRecursionCount;
         _isStopImmediately = config.IsStopImmediately;
@@ -124,7 +124,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// <exception cref="InvalidOperationException">まだ処理が開始されていません。</exception>
     /// <exception cref="StackOverflowException">コールバックメソッドを実行しているスレッドで一定回数以上再帰的に呼び出されました。</exception>
     /// <exception cref="Exception">コールバックメソッドで例外が発生しました。</exception>
-    public virtual void Invoke(QueueCallback callback, object state)
+    public virtual void Invoke(WorkCallback callback, object state)
     {
         ArgumentNullException.ThrowIfNull(callback);
         ThrowIfDisposed();
@@ -152,7 +152,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     /// <exception cref="ArgumentNullException"><paramref name="callback"/> が <see langword="null"/> です。</exception>
     /// <exception cref="ObjectDisposedException">現在のインスタンスは既に破棄されています。</exception>
-    public virtual void InvokeAsync(QueueCallback callback, object state)
+    public virtual void InvokeAsync(WorkCallback callback, object state)
     {
         ArgumentNullException.ThrowIfNull(callback);
         ThrowIfDisposed();
@@ -160,7 +160,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
         // タイミング悪くすり抜けてきても、ObjectDisposedException または処理が実行されずすり抜けるだけなはず。
         try
         {
-            _callbackQueue.Add(new QueueCallbackWorkerItem(callback, state));
+            _callbackQueue.Add(new CallbackWorkerItem(callback, state));
         }
         catch (InvalidOperationException ex)
         {
@@ -197,7 +197,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
             CancellationToken token = _cancellationTokenSource.Token;
             while (!token.IsCancellationRequested)
             {
-                QueueCallbackWorkerItem callbackQueueItem;
+                CallbackWorkerItem callbackQueueItem;
                 try
                 {
                     callbackQueueItem = _callbackQueue.Take(token);
@@ -288,7 +288,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// <param name="callback">コールバックメソッド。</param>
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     /// <exception cref="StackOverflowException">コールバックメソッドを実行しているスレッドで一定回数以上再帰的に呼び出されました。</exception>
-    private void InvokeFromSameThread(QueueCallback callback, object state)
+    private void InvokeFromSameThread(WorkCallback callback, object state)
     {
         Debug.Assert(callback != null, "callback != null");
         Debug.Assert(Interlocked.Read(ref _managedThreadId) == Environment.CurrentManagedThreadId, "Interlocked.Read(ref _managedThreadId) == Environment.CurrentManagedThreadId");
@@ -315,7 +315,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
     /// <param name="callback">コールバックメソッド。</param>
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     /// <exception cref="ObjectDisposedException">現在のインスタンスは既に破棄されています。</exception>
-    private void InvokeFromDifferentThread(QueueCallback callback, object state)
+    private void InvokeFromDifferentThread(WorkCallback callback, object state)
     {
         Debug.Assert(callback != null, "callback != null");
         Debug.Assert(Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId, "Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId");
@@ -325,7 +325,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
         {
             try
             {
-                _callbackQueue.Add(new QueueCallbackWorkerItem(
+                _callbackQueue.Add(new CallbackWorkerItem(
                     s =>
                     {
                         try
@@ -358,7 +358,7 @@ public class QueueCallbackWorker : IQueueCallbackWorker
             return;
         }
 
-        foreach (QueueCallbackWorkerItem remainingItem in _callbackQueue)
+        foreach (CallbackWorkerItem remainingItem in _callbackQueue)
         {
             Debug.Assert(remainingItem != null, "remainingItem != null");
 

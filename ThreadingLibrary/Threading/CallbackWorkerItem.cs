@@ -1,16 +1,16 @@
 namespace Mericle.Threading;
 
 /// <summary>
-/// <see cref="QueueCallbackWorker"/> のキューの要素を表します。
+/// <see cref="CallbackWorker"/> のキューの要素を表します。
 /// </summary>
-public class QueueCallbackWorkerItem
+public class CallbackWorkerItem
 {
     /// <summary>
     /// インスタンスを初期化します。
     /// </summary>
-    /// <param name="callback"><see cref="QueueCallbackWorker"/>で実行するコールバックメソッド。</param>
+    /// <param name="callback"><see cref="CallbackWorker"/>で実行するコールバックメソッド。</param>
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
-    public QueueCallbackWorkerItem(QueueCallback callback, object? state)
+    public CallbackWorkerItem(WorkCallback callback, object? state)
     {
         Callback = callback;
         State = state;
@@ -20,7 +20,7 @@ public class QueueCallbackWorkerItem
     /// コールバックメソッドを取得します。
     /// </summary>
     /// <value>コールバックメソッド。</value>
-    public QueueCallback Callback { get; }
+    public WorkCallback Callback { get; }
 
     /// <summary>
     /// コールバックメソッドが使用する情報を格納したオブジェクトを取得します。
