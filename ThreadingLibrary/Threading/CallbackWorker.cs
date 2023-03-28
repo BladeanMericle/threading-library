@@ -320,8 +320,9 @@ public class CallbackWorker : ICallbackWorker
         Debug.Assert(callback != null, "callback != null");
         Debug.Assert(Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId, "Interlocked.Read(ref _managedThreadId) != Environment.CurrentManagedThreadId");
 
+        CancellationToken token = _cancellationTokenSource.Token;
         using (ManualResetEventSlim invokeWaitHandle = new (false))
-        using (_cancellationTokenSource.Token.Register(invokeWaitHandle.Set))
+        using (token.Register(invokeWaitHandle.Set))
         {
             try
             {
@@ -338,7 +339,7 @@ public class CallbackWorker : ICallbackWorker
                         }
                     },
                     state));
-                invokeWaitHandle.Wait();
+                invokeWaitHandle.Wait(token);
             }
             catch (InvalidOperationException ex)
             {
