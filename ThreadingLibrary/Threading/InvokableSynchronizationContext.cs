@@ -1,25 +1,25 @@
 namespace Mericle.Threading;
 
 /// <summary>
-/// <see cref="ICallbackWorker"/>を使用した<see cref="SynchronizationContext"/>を表します。
+/// <see cref="IInvokable"/>を使用した<see cref="SynchronizationContext"/>を表します。
 /// </summary>
-public class CallbackWorkerSynchronizationContext : SynchronizationContext
+public class InvokableSynchronizationContext : SynchronizationContext
 {
     /// <summary>
-    /// ワーカー。
+    /// コールバックの呼び出しが可能なオブジェクト。
     /// </summary>
-    private readonly ICallbackWorker _callbackWorker;
+    private readonly IInvokable _invokable;
 
     /// <summary>
     /// 指定したワーカーで新しいインスタンスを初期化します。
     /// </summary>
-    /// <param name="callbackWorker">ワーカー。</param>
-/// <exception cref="ArgumentNullException"><paramref name="callbackWorker"/>が<see langword="null"/>です。</exception>
-    public CallbackWorkerSynchronizationContext(ICallbackWorker callbackWorker)
+    /// <param name="invokable">コールバックの呼び出しが可能なオブジェクト。</param>
+    /// <exception cref="ArgumentNullException"><paramref name="invokable"/>が<see langword="null"/>です。</exception>
+    public InvokableSynchronizationContext(IInvokable invokable)
     {
-        ArgumentNullException.ThrowIfNull(callbackWorker);
+        ArgumentNullException.ThrowIfNull(invokable);
 
-        _callbackWorker = callbackWorker;
+        _invokable = invokable;
     }
 
     /// <summary>
@@ -29,7 +29,8 @@ public class CallbackWorkerSynchronizationContext : SynchronizationContext
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     public override void Send(SendOrPostCallback d, object? state)
     {
-        _callbackWorker.Invoke(new WorkCallback(d), state);
+        Action<object?> callback = new (d);
+        _invokable.Invoke(callback, state);
     }
 
     /// <summary>
@@ -39,6 +40,7 @@ public class CallbackWorkerSynchronizationContext : SynchronizationContext
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     public override void Post(SendOrPostCallback d, object? state)
     {
-        _callbackWorker.InvokeAsync(new WorkCallback(d), state);
+        Action<object?> callback = new (d);
+        _invokable.InvokeAsync(callback, state);
     }
 }
