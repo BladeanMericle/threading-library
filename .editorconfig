@@ -26,3 +26,6 @@ dotnet_diagnostic.SA1623.severity = none
 dotnet_diagnostic.SA1633.severity = none
 # コンストラクタのドキュメントコメントは、"Initializes"で始まらなくても構いません。
 dotnet_diagnostic.SA1642.severity = none
+# 中括弧の省略を許可します。ですがこれは最新のswitch文の誤判定の回避のためであって本来は有効にしたい警告になります。
+# https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3288
+dotnet_diagnostic.SA1513.severity = none

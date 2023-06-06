@@ -29,8 +29,7 @@ public class InvokableSynchronizationContext : SynchronizationContext
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     public override void Send(SendOrPostCallback d, object? state)
     {
-        Action<object?> callback = new (d);
-        _invokable.Invoke(callback, state);
+        _invokable.Invoke(new (d), state);
     }
 
     /// <summary>
@@ -40,7 +39,6 @@ public class InvokableSynchronizationContext : SynchronizationContext
     /// <param name="state">コールバックメソッドが使用する情報を格納したオブジェクト。</param>
     public override void Post(SendOrPostCallback d, object? state)
     {
-        Action<object?> callback = new (d);
-        _invokable.InvokeAsync(callback, state);
+        _invokable.InvokeAsync(new (d), state);
     }
 }
